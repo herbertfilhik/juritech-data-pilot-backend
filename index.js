@@ -4,10 +4,14 @@ require('dotenv').config();
 const cors = require('cors');
 const uploadRoutes = require('./routes/uploadRoutes'); // Certifique-se de que o caminho está correto
 const acompanhamentoServicoRoutes = require('./routes/acompanhamentoServicoRoutes'); // Importação da nova rota
+const Documento = require('./models/Documento'); // O caminho deve ser ajustado para onde seu modelo Mongoose está localizado
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Usando o router com o prefixo /api
+app.use('/api', acompanhamentoServicoRoutes);
 
 // Conexão com o MongoDB Atlas
 mongoose.connect(process.env.DB_URI)
@@ -36,11 +40,23 @@ app.get('/acompanhamentoServico', async (req, res) => {
   }
 });
 
-// Usando o router com o prefixo /api
-app.use('/api', acompanhamentoServicoRoutes);
-
 // Iniciando o servidor
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
+});
+
+// Rota para excluir todos os documentos
+app.delete('/api/documentos', async (req, res) => {
+  try {
+    const result = await Documento.deleteMany({}); // Isso exclui todos os documentos
+    if (result.deletedCount === 0) {
+      res.status(404).send("Não havia documentos para excluir."); // Se nenhum documento foi excluído
+    } else {
+      res.status(200).send("Documentos excluídos com sucesso.");
+    }
+  } catch (error) {
+    console.error("Erro ao excluir documentos:", error);
+    res.status(500).send("Erro ao excluir documentos."); // Apenas envie esta mensagem se houver um erro técnico
+  }
 });
