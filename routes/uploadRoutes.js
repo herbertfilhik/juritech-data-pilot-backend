@@ -2,26 +2,15 @@ const express = require('express');
 const multer = require('multer');
 const Documento = require('../models/Documento');
 const xlsx = require('xlsx');
-const moment = require('moment');
-const fs = require('fs').promises; // Para leitura assíncrona de arquivos
+const moment = require('moment'); // Certifique-se de ter instalado a biblioteca moment
 
 const router = express.Router();
-
-// Filtragem de arquivos para aceitar apenas arquivos Excel
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.includes("excel") || file.mimetype.includes("spreadsheetml")) {
-    cb(null, true);
-  } else {
-    cb(new Error("Apenas arquivos Excel são permitidos."), false);
-  }
-};
-
-const upload = multer({ dest: 'uploads/', fileFilter });
+const upload = multer({ dest: 'uploads/' });
 
 // Função para converter data do Excel (OADate) para data JavaScript
 function excelDateToJSDate(serial) {
   const utc_days = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400;
+  const utc_value = utc_days * 86400;                                        
   const date_info = new Date(utc_value * 1000);
   const correctedDate = new Date(date_info.getTime() + (date_info.getTimezoneOffset() * 60000));
   return moment(correctedDate).format('DD-MM-YYYY');
@@ -34,8 +23,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 
   try {
-    const buffer = await fs.readFile(file.path);
-    const workbook = xlsx.read(buffer, { type: 'buffer' });
+    const existingDocumento = await Documento.findOne({ nome: file.originalname });
+    if (existingDocumento) {
+      return res.status(400).json({ message: 'Este arquivo já foi processado anteriormente.' });
+    }
+
+    const workbook = xlsx.readFile(file.path);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
@@ -85,9 +78,6 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('Erro ao processar o arquivo:', error);
     res.status(500).json({ message: 'Erro ao processar o arquivo', error: error.toString() });
-  } finally {
-    // Assegura que o arquivo seja deletado após o processamento
-    await fs.unlink(file.path);
   }
 });
 
