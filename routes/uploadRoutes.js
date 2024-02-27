@@ -2,10 +2,30 @@ const express = require('express');
 const multer = require('multer');
 const Documento = require('../models/Documento');
 const xlsx = require('xlsx');
-const moment = require('moment'); // Certifique-se de ter instalado a biblioteca moment
+const moment = require('moment');
+const fs = require('fs').promises; // Para leitura assíncrona de arquivos
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
+
+// Filtragem de arquivos para aceitar apenas arquivos Excel
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.includes("excel") || file.mimetype.includes("spreadsheetml")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Apenas arquivos Excel são permitidos."), false);
+  }
+};
+
+const upload = multer({ dest: 'uploads/', fileFilter });
+
+// Função para converter data do Excel (OADate) para data JavaScript
+function excelDateToJSDate(serial) {
+  const utc_days = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400;
+  const date_info = new Date(utc_value * 1000);
+  const correctedDate = new Date(date_info.getTime() + (date_info.getTimezoneOffset() * 60000));
+  return moment(correctedDate).format('DD-MM-YYYY');
+}
 
 router.post('/upload', upload.single('file'), async (req, res) => {
   const file = req.file;
@@ -14,38 +34,20 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 
   try {
-    const existingDocumento = await Documento.findOne({ nome: file.originalname });
-    if (existingDocumento) {
-      return res.status(400).json({ message: 'Este arquivo já foi processado anteriormente.' });
-    }
-
-    const workbook = xlsx.readFile(file.path);
+    const buffer = await fs.readFile(file.path);
+    const workbook = xlsx.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 }); // Use { header: 1 } para obter dados como array de arrays
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
-    // Remove o cabeçalho da planilha
+    // Remove os cabeçalhos
     data.shift(); // Remove a primeira linha (cabeçalho)
     data.shift(); // Remove a segunda linha, que agora é a primeira após o primeiro shift()
 
-    // Função para converter data do Excel (OADate) para data JavaScript
-    function excelDateToJSDate(serial) {
-      const utc_days = Math.floor(serial - 25569);
-      const utc_value = utc_days * 86400;                                        
-      const date_info = new Date(utc_value * 1000);
-  
-      // Corrige a data considerando o fuso horário UTC para evitar deslocamentos indesejados
-      const correctedDate = new Date(date_info.getTime() + (date_info.getTimezoneOffset() * 60000));
-  
-      // Formata a data para o formato desejado (DD-MM-YYYY) usando moment.js
-      return moment(correctedDate).format('DD-MM-YYYY');
-    }
-  
-    // Mapeia os dados para o formato desejado
     const mapeamentoDados = data.map((row) => ({
       "Controle Target": row[0],
-      "Data de Solicitação": excelDateToJSDate(row[1]), // Já retorna 'DD-MM-YYYY'
-      "Data de Início":  excelDateToJSDate(row[2]),
+      "Data de Solicitação": excelDateToJSDate(row[1]),
+      "Data de Início": excelDateToJSDate(row[2]),
       "Solicitante": row[3],
       "Grupo": row[4],
       "Cliente": row[5],
@@ -73,19 +75,19 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       "NF": row[27]
     }));
 
-    // Salva cada documento mapeado no banco de dados
-    for (const documento of mapeamentoDados) {
-      const novoDocumento = new Documento({
-        nome: file.originalname,
-        dados: documento
-      });
-      await novoDocumento.save();
-    }
+    // Operação em massa para salvar os documentos
+    await Documento.insertMany(mapeamentoDados.map(dado => ({
+      nome: file.originalname,
+      dados: dado
+    })));
 
     res.json({ message: 'Todos os registros foram processados e salvos com sucesso.' });
   } catch (error) {
     console.error('Erro ao processar o arquivo:', error);
     res.status(500).json({ message: 'Erro ao processar o arquivo', error: error.toString() });
+  } finally {
+    // Assegura que o arquivo seja deletado após o processamento
+    await fs.unlink(file.path);
   }
 });
 
