@@ -1,7 +1,4 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI
+name: Juritech Backend CI
 
 on:
   push:
@@ -11,21 +8,25 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [14.x, 16.x, 18.x] # Supported Node.js versions
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v3 # Checks-out your repository
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
+        cache: 'npm' # Caches npm modules
+
+    - run: npm ci # Clean install of node dependencies
+
+    # Run the build script if your project requires compilation or build step. If not needed, this can be removed.
     - run: npm run build --if-present
+
+    # Run tests. Make sure you have a 'test' script in your package.json.
     - run: npm test
