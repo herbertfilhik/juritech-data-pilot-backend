@@ -52,12 +52,12 @@ app.delete('/api/documentos', async (req, res) => {
   try {
     const resultado = await Documento.deleteMany({});
     if (resultado.deletedCount === 0) {
-      return res.status(404).send("Não havia documentos para excluir. back");
+      return res.status(404).send("Não havia documentos para excluir.");
     } else {
-      return res.status(200).send("Documentos excluídos com sucesso. back");
+      return res.status(200).send("Documentos excluídos com sucesso.");
     }
   } catch (error) {
-    console.error("Erro ao excluir documentos: back", error);
-    return res.status(500).send("Erro ao excluir documentos. back");
+    console.error("Erro ao excluir documentos:", error);
+    return res.status(500).send("Erro ao excluir documentos.");
   }
 });
