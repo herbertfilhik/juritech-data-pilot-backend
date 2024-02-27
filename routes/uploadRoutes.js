@@ -1,16 +1,15 @@
 const express = require('express');
 const multer = require('multer');
 const Documento = require('../models/Documento');
-const xlsx = require('xlsx');
-const moment = require('moment'); // Certifique-se de ter instalado a biblioteca moment
+const ExcelJS = require('exceljs'); // Usando exceljs em vez de xlsx
+const moment = require('moment');
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
-// Função para converter data do Excel (OADate) para data JavaScript
 function excelDateToJSDate(serial) {
   const utc_days = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400;                                        
+  const utc_value = utc_days * 86400;
   const date_info = new Date(utc_value * 1000);
   const correctedDate = new Date(date_info.getTime() + (date_info.getTimezoneOffset() * 60000));
   return moment(correctedDate).format('DD-MM-YYYY');
@@ -28,14 +27,20 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ message: 'Este arquivo já foi processado anteriormente.' });
     }
 
-    const workbook = xlsx.readFile(file.path);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(file.path);
+    const worksheet = workbook.getWorksheet(1); // Obtém a primeira planilha
+    const data = [];
+
+    worksheet.eachRow(function(row, rowNumber) {
+      const rowValues = row.values;
+      rowValues.shift(); // Remove o primeiro elemento que é undefined devido ao índice iniciar em 1
+      data.push(rowValues);
+    });
 
     // Remove os cabeçalhos
     data.shift(); // Remove a primeira linha (cabeçalho)
-    data.shift(); // Remove a segunda linha, que agora é a primeira após o primeiro shift()
+    data.shift(); // Remove a segunda linha, que agora é a primeira após o primeiro shift
 
     const mapeamentoDados = data.map((row) => ({
       "Controle Target": row[0],
@@ -68,7 +73,6 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       "NF": row[27]
     }));
 
-    // Operação em massa para salvar os documentos
     await Documento.insertMany(mapeamentoDados.map(dado => ({
       nome: file.originalname,
       dados: dado
