@@ -1,3 +1,4 @@
+//index.js back end
 const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
@@ -49,14 +50,14 @@ app.listen(PORT, () => {
 // Rota para excluir todos os documentos
 app.delete('/api/documentos', async (req, res) => {
   try {
-    const result = await Documento.deleteMany({}); // Isso exclui todos os documentos
-    if (result.deletedCount === 0) {
-      res.status(404).send("Não havia documentos para excluir."); // Se nenhum documento foi excluído
+    const resultado = await Documento.deleteMany({});
+    if (resultado.deletedCount === 0) {
+      return res.status(404).send("Não havia documentos para excluir. back");
     } else {
-      res.status(200).send("Documentos excluídos com sucesso.");
+      return res.status(200).send("Documentos excluídos com sucesso. back");
     }
   } catch (error) {
-    console.error("Erro ao excluir documentos:", error);
-    res.status(500).send("Erro ao excluir documentos."); // Apenas envie esta mensagem se houver um erro técnico
+    console.error("Erro ao excluir documentos: back", error);
+    return res.status(500).send("Erro ao excluir documentos. back");
   }
 });
