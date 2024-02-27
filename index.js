@@ -6,10 +6,12 @@ const cors = require('cors');
 const uploadRoutes = require('./routes/uploadRoutes'); // Certifique-se de que o caminho está correto
 const acompanhamentoServicoRoutes = require('./routes/acompanhamentoServicoRoutes'); // Importação da nova rota
 const Documento = require('./models/Documento'); // O caminho deve ser ajustado para onde seu modelo Mongoose está localizado
+const bodyParser = require('body-parser');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.json());
 
 // Usando o router com o prefixo /api
 app.use('/api', acompanhamentoServicoRoutes);
@@ -18,6 +20,20 @@ app.use('/api', acompanhamentoServicoRoutes);
 mongoose.connect(process.env.DB_URI)
   .then(() => console.log('Conexão com o MongoDB Atlas bem-sucedida'))
   .catch((err) => console.error('Erro ao conectar com o MongoDB Atlas', err));
+
+const USERS = {
+  admin: { password: 'senha123' }, // Em um cenário real, use hash de senha
+};
+
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (USERS[username] && USERS[username].password === password) {
+    res.json({ message: 'Login bem-sucedido!' });
+  } else {
+    res.status(401).json({ message: 'Usuário ou senha inválidos!' });
+  }
+});
 
 // Rota de boas-vindas
 app.get('/', (req, res) => {
