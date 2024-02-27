@@ -7,6 +7,7 @@ const uploadRoutes = require('./routes/uploadRoutes'); // Certifique-se de que o
 const acompanhamentoServicoRoutes = require('./routes/acompanhamentoServicoRoutes'); // Importação da nova rota
 const Documento = require('./models/Documento'); // O caminho deve ser ajustado para onde seu modelo Mongoose está localizado
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 app.use(cors());
@@ -21,6 +22,21 @@ mongoose.connect(process.env.DB_URI)
   .then(() => console.log('Conexão com o MongoDB Atlas bem-sucedida'))
   .catch((err) => console.error('Erro ao conectar com o MongoDB Atlas', err));
 
+const verifyToken = (req, res, next) => {
+  const token = req.headers['authorization'];
+
+  if (!token) {
+    return res.status(403).send("Um token é necessário para a autenticação");
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+  } catch (err) {
+    return res.status(401).send("Token inválido");
+  }
+  return next();
+};
+
 const USERS = {
   admin: { password: 'senha123' }, // Em um cenário real, use hash de senha
 };
@@ -29,14 +45,17 @@ app.post('/login', (req, res) => {
   const { username, password } = req.body;
 
   if (USERS[username] && USERS[username].password === password) {
-    res.json({ message: 'Login bem-sucedido!' });
+    // Se bem-sucedido, cria o token
+    const token = jwt.sign({ userId: USERS[username].id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    // Envia tanto a mensagem quanto o token na mesma resposta
+    res.json({ message: 'Login bem-sucedido!', token });
   } else {
     res.status(401).json({ message: 'Usuário ou senha inválidos!' });
   }
 });
 
 // Rota de boas-vindas
-app.get('/', (req, res) => {
+app.get('/', verifyToken, (req, res) => {
   res.send('Bem-vindo ao servidor do escritório jurídico!');
 });
 
@@ -45,7 +64,7 @@ app.use('/', uploadRoutes);
 app.use('/', acompanhamentoServicoRoutes);
 
 // Rota para acompanhamento de serviço com filtro
-app.get('/acompanhamentoServico', async (req, res) => {
+app.get('/acompanhamentoServico', verifyToken, async (req, res) => {
   const { filtro } = req.query;
   try {
     // Substitua 'YourModel' pelo modelo Mongoose que você está usando para consultar os dados
@@ -64,7 +83,7 @@ app.listen(PORT, () => {
 });
 
 // Rota para excluir todos os documentos
-app.delete('/api/documentos', async (req, res) => {
+app.delete('/api/documentos', verifyToken, async (req, res) => {
   try {
     const resultado = await Documento.deleteMany({});
     if (resultado.deletedCount === 0) {
