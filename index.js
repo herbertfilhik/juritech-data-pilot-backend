@@ -22,20 +22,26 @@ mongoose.connect(process.env.DB_URI)
   .then(() => console.log('Conexão com o MongoDB Atlas bem-sucedida'))
   .catch((err) => console.error('Erro ao conectar com o MongoDB Atlas', err));
 
-const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization'];
-
-  if (!token) {
-    return res.status(403).send("Um token é necessário para a autenticação");
-  }
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-  } catch (err) {
-    return res.status(401).send("Token inválido");
-  }
-  return next();
-};
+  const verifyToken = (req, res, next) => {
+    // Extrai o token do cabeçalho Authorization
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Divide a string pelo espaço e pega o segundo elemento (o token)
+  
+    if (!token) {
+      return res.status(403).send("Um token é necessário para a autenticação");
+    }
+  
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+    } catch (err) {
+      return res.status(401).send("Token inválido");
+    }
+  
+    return next();
+  };
+  
+  module.exports = verifyToken;
 
 const USERS = {
   admin: { password: 'senha123' }, // Em um cenário real, use hash de senha
