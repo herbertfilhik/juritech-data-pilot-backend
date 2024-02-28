@@ -24,6 +24,8 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm' # Caches npm modules
 
+    - run: npm cache clean --force  
+
     - run: npm ci # Clean install of node dependencies
 
     # Run the build script if your project requires compilation or build step. If not needed, this can be removed.
