@@ -1,1 +1,14 @@
 { "dados.Controle Target": "2.023.003" } query para mongo
+
+### `heroku` to deploy the app
+
+set NODE_OPTIONS=--openssl-legacy-provider
+npm install -g heroku
+heroku --version
+heroku login
+heroku create juritech-data-pilot
+git push heroku main
+heroku restart
+heroku logs --tail --app juritech-data-pilo
+
+incluir var ambientes para acessar o banco de dados
