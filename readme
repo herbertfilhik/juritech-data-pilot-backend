@@ -1,4 +1,5 @@
 #{ "dados.Controle Target": "2.023.003" } query para mongo
+#{ "_id": ObjectId("65ff49b74efa9176f80ed771") }
 
 ### `heroku` to deploy the app
 
@@ -15,3 +16,21 @@ heroku ps:restart web.1 -a juritech-data-pilot-backend
 heroku restart -a juritech-data-pilot-backend
 
 incluir var ambientes para acessar o banco de dados
+
+### Debugando back com devtools
+
+Depuração do Backend:
+Use logs para verificar se os dados recebidos estão corretos e correspondem ao que você espera atualizar.
+Certifique-se de que o ID passado na URL está correto e corresponde a um documento no banco de dados.
+Se estiver usando o Mongoose, verifique se os campos que você está tentando atualizar estão definidos no esquema do Mongoose. Se um campo não estiver definido no esquema, ele não será salvo no banco de dados.
+
+Para depurar o backend e ver os logs em tempo real, você pode:
+Executar o servidor Node.js localmente no seu terminal. Os console.log aparecerão no terminal.
+Usar ferramentas como o nodemon para reiniciar automaticamente seu servidor após mudanças no código.
+Para uma experiência de depuração mais rica, você pode usar o node --inspect para iniciar o servidor e então conectar-se a ele usando as ferramentas do desenvolvedor do Chrome para depurar o código como faria no frontend.
+
+Debugando com node --inspect:
+Inicie seu servidor com node --inspect index.js, onde index.js é o ponto de entrada do seu servidor.
+Abra o Chrome e acesse chrome://inspect.
+Clique em "Open dedicated DevTools for Node" para abrir as ferramentas de desenvolvimento dedicadas ao Node.js.
+Aqui você pode colocar breakpoints, inspecionar variáveis e acompanhar a execução do código passo a passo.

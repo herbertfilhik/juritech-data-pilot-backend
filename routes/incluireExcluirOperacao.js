@@ -1,7 +1,58 @@
 const express = require('express');
 const router = express.Router();
-
 const Documento = require('../models/Documento'); // Ajuste o caminho conforme necessário
+
+
+// Rota para inserir um novo documento
+router.post('/createDocument', async (req, res) => {
+  // O body da requisição deve conter os dados do documento que você deseja inserir
+  const newDocumentData = req.body;
+
+  try {
+    // Cria um novo documento com os dados recebidos
+    const newDocument = new Documento(newDocumentData);
+    // Salva o documento no banco de dados
+    await newDocument.save();
+
+    console.log('Documento inserido com sucesso:', newDocument);
+    res.status(201).json(newDocument);
+  } catch (error) {
+    console.error('Erro ao inserir documento:', error);
+    // Um erro comum aqui poderia ser um erro de validação se os dados não corresponderem ao seu esquema
+    res.status(500).json({ message: 'Erro ao inserir o documento', error });
+  }
+});
+
+
+// Atualizar um registro específico
+router.put('/saveRegister/:id', async (req, res) => {
+  const { id } = req.params;
+  const updatedData = req.body;
+
+  console.log(`Requisição de atualização recebida para o ID: ${id}`);
+  console.log('Dados a serem atualizados:', updatedData);
+
+  try {
+    // Atualiza o documento no banco de dados
+    const updatedDocument = await Documento.findByIdAndUpdate(
+      id,
+      { $set: updatedData }, // Atualiza diretamente com os dados recebidos
+      { new: true, runValidators: true } // Retorna o documento atualizado e executa os validadores
+    );
+
+    if (updatedDocument) {
+      console.log(`Documento atualizado com sucesso: ${updatedDocument}`);
+      res.status(200).json(updatedDocument);
+    } else {
+      console.log(`Documento com ID: ${id} não encontrado.`);
+      res.status(404).json({ message: 'Documento não encontrado' });
+    }
+  } catch (error) {
+    console.error(`Erro ao atualizar documento com ID: ${id}`, error);
+    res.status(500).json({ message: 'Erro ao atualizar o documento', error });
+  }
+});
+
 
 router.get('/incluireExcluirOperacao', async (req, res) => {
     const { filtro } = req.query;
