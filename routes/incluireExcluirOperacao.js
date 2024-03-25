@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const Documento = require('../models/Documento'); // Ajuste o caminho conforme necessário
 
+// Rota para deletar um registro pelo ID
+router.delete('/delete/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await Documento.deleteOne({ _id: id });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'Registro não encontrado.' });
+    }
+
+    return res.status(200).json({ message: 'Registro excluído com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao deletar o registro:', error);
+    return res.status(500).json({ error: 'Erro ao deletar o registro' });
+  }
+});
 
 // Rota para inserir um novo documento
 router.post('/createDocument', async (req, res) => {
