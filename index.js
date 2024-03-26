@@ -6,6 +6,7 @@ const cors = require('cors');
 const uploadRoutes = require('./routes/uploadRoutes'); // Certifique-se de que o caminho está correto
 const acompanhamentoServicoRoutes = require('./routes/acompanhamentoServicoRoutes'); // Importação da nova rota
 const incluireExcluirOperacao = require('./routes/incluireExcluirOperacao'); // Importação da nova rota
+const dataRouter = require('./routes/dashboard');
 const Documento = require('./models/Documento'); // O caminho deve ser ajustado para onde seu modelo Mongoose está localizado
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 // Usando o router com o prefixo /api
 app.use('/api', acompanhamentoServicoRoutes);
 app.use('/api', incluireExcluirOperacao);
+app.use('/api', dataRouter);
 
 // Conexão com o MongoDB Atlas
 mongoose.connect(process.env.DB_URI)
