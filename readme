@@ -1,5 +1,6 @@
 #{ "dados.Controle Target": "2.023.003" } query para mongo
 #{ "_id": ObjectId("65ff49b74efa9176f80ed771") }
+#{ "dados.Status": "CONCLUIDO" }
 
 ### `heroku` to deploy the app
 
